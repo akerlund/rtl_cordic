@@ -20,10 +20,13 @@ This is a System Verilog implementation of the CORDIC algorithm. The design use 
   on Verilator, and checks every beat against Python's `math.cos`/`math.sin`.
 - [`scripts/python/`](scripts/python) — offline generators for the atan and
   angle tables. Not part of any build.
-- [`submodules/`](submodules) — `vip_axi4s_agent` (which carries
-  `vip_clk_rst_agent`, `vip_gauss` and `vip_report_server` of its own) and
-  `vip_common` (fixed-point helpers, used by the Python testbench and the
-  table generators).
+- [`submodules/`](submodules) —
+  [`vip_axi4s_agent`](https://github.com/akerlund/vip_axi4s_agent) (which
+  carries [`vip_clk_rst_agent`](https://github.com/akerlund/vip_clk_rst_agent),
+  [`vip_gauss`](https://github.com/akerlund/vip_gauss) and
+  [`vip_report_server`](https://github.com/akerlund/vip_report_server) of its
+  own) and [`vip_common`](https://github.com/akerlund/vip_common) (fixed-point
+  helpers, used by the Python testbench and the table generators).
 
 ```
 git clone --recurse-submodules git@github.com:akerlund/rtl_cordic.git
@@ -32,9 +35,9 @@ git clone --recurse-submodules git@github.com:akerlund/rtl_cordic.git
 ## Building
 
 ```
-fusesoc run --target=rtl  akerlund::cordic              # Verilator lint, no dependencies
-./py/run_fusesoc.sh                                    # cocotb regression (Verilator)
-fusesoc run --target=uvm  akerlund::cordic_example     # UVM testbench (VCS + UVM-1.2)
+fusesoc run --target=rtl akerlund::cordic         # Verilator lint, no dependencies
+./py/run_fusesoc.sh                               # cocotb regression (Verilator)
+fusesoc run --target=uvm akerlund::cordic_example # UVM testbench (VCS + UVM-1.2)
 ```
 
 `run_fusesoc.sh` sets `PYTHONPATH` for the agent and `vip_common` before
