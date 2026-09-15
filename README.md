@@ -36,7 +36,42 @@ git clone --recurse-submodules git@github.com:akerlund/rtl_cordic.git
 
 ## Building
 
+Every tool this design is built and run with, and how to reach each one.
+
+### refuse
+
+[refuse](https://github.com/akerlund/refuse) wraps FuseSoC and adds the
+synthesis and place-and-route flows. It finds the git root and the nearest
+`.core` itself, and keeps output under `rundir/<tool>`.
+
+```sh
+refuse yosys    --target rtl     # standard-cell synthesis  -> rundir/yosys
+refuse openroad --target rtl     # place and route          -> rundir/openroad
+refuse vcs                       # build the UVM testbench with VCS
 ```
+
+`yosys` and `openroad` run here as-is; their results are in
+[ASIC flow](#asic-flow) below. `vcs` needs a Synopsys installation and licence.
+
+Two refuse subcommands do **not** apply to this repository. `refuse verilator`
+expects Verilator profiles in a `.refuse.yml`, which this repository does not
+carry — use `./py/run_fusesoc.sh` for the cocotb regression. `refuse vivado`
+drives the flow's default target, which builds a bitstream; `cordic_axi4s_if`
+is synthesized out-of-context and has no pins to place, so use
+[`scripts/run_synth_vivado.sh`](scripts/run_synth_vivado.sh) instead.
+
+### Vivado
+
+```sh
+./scripts/run_synth_vivado.sh    # out-of-context synthesis -> build/
+```
+
+Stops after synthesis rather than continuing to implementation and a
+bitstream, for the reason above. Results in [Synthesis](#synthesis).
+
+### FuseSoC
+
+```sh
 fusesoc run --target=rtl akerlund::cordic         # Verilator lint, no dependencies
 ./py/run_fusesoc.sh                               # cocotb regression (Verilator)
 fusesoc run --target=uvm akerlund::cordic_example # UVM testbench (VCS + UVM-1.2)
