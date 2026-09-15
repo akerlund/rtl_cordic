@@ -1,8 +1,11 @@
 # CORDIC - System Verilog
 
-![Test  Status](https://img.shields.io/badge/test-pass-green)
-![Synth Status](https://img.shields.io/badge/synthesis-pass-green)
-![FPGA  Status](https://img.shields.io/badge/fpga-pass-green)
+![Verilator](https://img.shields.io/badge/Verilator-5.050-brightgreen)
+![cocotb](https://img.shields.io/badge/cocotb-2.0.1-brightgreen)
+![pyUVM](https://img.shields.io/badge/pyUVM-4.0.1-brightgreen)
+![FuseSoC](https://img.shields.io/badge/FuseSoC-2.4.6-brightgreen)
+![VCS](https://img.shields.io/badge/VCS-2025.06-brightgreen)
+![Vivado](https://img.shields.io/badge/Vivado-2025.2-brightgreen)
 
 This is a System Verilog implementation of the CORDIC algorithm. The design use fixed point representation of the input and output vectors. The input should be between ±2π with four integer bits and the rest as fractional bits and the output will be between ±1.
 
@@ -73,7 +76,6 @@ This implementation of the CORDIC algorithm can yield a simulation like this
 
 Out of context synthesis for a "7z020clg484-1" FPGA yields the following
 
-
 ```text
 ...
 parameter int AXI_DATA_WIDTH_P = 32,
@@ -138,7 +140,6 @@ where *i* denotes the stage number. The idea is that the values from the above e
 
 Recall that any vector like $V_n = [X_n, Y_n]$, illustrated in Fig. 1, can be described as in
 
-
 *(Eq. 2)*
 
 $$
@@ -200,7 +201,6 @@ Iteration | Angle  | tan(Θ)        | Result                   |
 
 *Table 2. Possible angles of*  $atan(2^{-i})$.
 
-
 This means that the iterations of the input vector of the different stages are described in
 
 (Eq. 4)
@@ -247,7 +247,6 @@ $$
 A_i = \prod_{n}^{i-1} \frac{1}{\sqrt{1 + 2^{-2n}}}
 $$
 
-
 With an infinite amount of stages the acquired value of an angle will be exact, and the total gain will converge to
 
 (Eq. 9)
@@ -278,9 +277,6 @@ Table 3 shows the gain *Ai* of the 16 first stages. Only the first few stages sh
 | 15  | 1.646760257865 |
 
 *Table 3. The first values of Ai.*
-
-
-
 
 ### References
 [1] Jack E Volder. The cordic trigonometric computing technique.Electronic Computers, IRE Transactionson, (3):330-334, 1959.
