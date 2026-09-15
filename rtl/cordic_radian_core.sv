@@ -136,8 +136,10 @@ module cordic_radian_core #(
       // Value of atan(2^-i)
       assign atan_value = atan_radian_table_32stage_n64q60[i][63 : 63-DATA_WIDTH_P+1];
 
-      // The sign of the current rotation angle
-      assign z_sign = z_vector[i][31];
+      // The sign of the current rotation angle: the MSB of a signed value.
+      // Indexing a fixed bit 31 here is only the sign bit when DATA_WIDTH_P
+      // happens to be 32, and is out of range below that.
+      assign z_sign = z_vector[i][DATA_WIDTH_P-1];
 
       always_ff @(posedge clk or negedge rst_n) begin: cordic_stage
         if (!rst_n) begin

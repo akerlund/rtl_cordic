@@ -98,12 +98,12 @@ At the core's default parameters — `AXI_DATA_WIDTH_P=16`, `AXI_ID_WIDTH_P=4`,
 +----------------------------+------+-------+------------+-----------+-------+
 |          Site Type         | Used | Fixed | Prohibited | Available | Util% |
 +----------------------------+------+-------+------------+-----------+-------+
-| Slice LUTs*                |  539 |     0 |          0 |     53200 |  1.01 |
-|   LUT as Logic             |  534 |     0 |          0 |     53200 |  1.00 |
+| Slice LUTs*                |  797 |     0 |          0 |     53200 |  1.50 |
+|   LUT as Logic             |  792 |     0 |          0 |     53200 |  1.49 |
 |   LUT as Memory            |    5 |     0 |          0 |     17400 |  0.03 |
 |     LUT as Shift Register  |    5 |     0 |            |           |       |
-| Slice Registers            |  509 |     0 |          0 |    106400 |  0.48 |
-|   Register as Flip Flop    |  509 |     0 |          0 |    106400 |  0.48 |
+| Slice Registers            |  704 |     0 |          0 |    106400 |  0.66 |
+|   Register as Flip Flop    |  704 |     0 |          0 |    106400 |  0.66 |
 |   Register as Latch        |    0 |     0 |          0 |    106400 |  0.00 |
 +----------------------------+------+-------+------------+-----------+-------+
 ```
@@ -114,6 +114,13 @@ synthesis maps no pins.
 
 Cost scales with `NR_OF_STAGES_P`, since the stages are a pipeline: more stages
 buy more accuracy at a proportional cost in LUTs and registers.
+
+Yosys maps the same configuration to 3943 standard cells (40814 µm²) on
+sky130hd:
+
+```sh
+refuse yosys --target rtl
+```
 
 ## CORDIC Theory
 
