@@ -6,6 +6,8 @@
 ![Vivado](https://img.shields.io/badge/Vivado-2025.2-green)
 ![VCS](https://img.shields.io/badge/VCS-2025.06-green)
 
+![Yosys](https://img.shields.io/badge/Yosys-0.69-green)
+![OpenROAD](https://img.shields.io/badge/OpenROAD-v2.0-green)
 ![FuseSoC](https://img.shields.io/badge/FuseSoC-2.4.6-blue)
 
 This is a System Verilog implementation of the CORDIC algorithm. The design use fixed point representation of the input and output vectors. The input should be between ±2π with four integer bits and the rest as fractional bits and the output will be between ±1.
@@ -115,12 +117,30 @@ synthesis maps no pins.
 Cost scales with `NR_OF_STAGES_P`, since the stages are a pipeline: more stages
 buy more accuracy at a proportional cost in LUTs and registers.
 
-Yosys maps the same configuration to 3943 standard cells (40814 µm²) on
-sky130hd:
+## ASIC flow
+
+The same design through the open-source flow, via
+[refuse](https://github.com/akerlund/refuse):
 
 ```sh
-refuse yosys --target rtl
+refuse yosys    --target rtl     # map onto standard cells
+refuse openroad --target rtl     # place and route the netlist
 ```
+
+On sky130hd, same default parameters:
+
+| | |
+|---|---|
+| Standard cells | 3943 |
+| Cell area | 40814 µm² |
+| Design area after P&R | 46669 µm², 46% utilisation |
+| Setup slack | 2.88 ns |
+| Hold slack | 0.34 ns |
+| Total power | 28.0 mW |
+| Route violations | **0** |
+
+Bigger and hungrier than the FIFO, as a 16-stage arithmetic pipeline should
+be: every stage carries three vectors of adders and shifters.
 
 ## CORDIC Theory
 
