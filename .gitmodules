@@ -1,0 +1,6 @@
+[submodule "submodules/vip_axi4s_agent"]
+	path = submodules/vip_axi4s_agent
+	url = git@github.com:akerlund/vip_axi4s_agent.git
+[submodule "submodules/vip_common"]
+	path = submodules/vip_common
+	url = git@github.com:akerlund/vip_common.git

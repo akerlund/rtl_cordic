@@ -1,0 +1,5 @@
+rundir/
+build/
+__pycache__/
+*.pyc
+results.xml

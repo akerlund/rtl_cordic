@@ -1,0 +1,159 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2026 Fredrik Åkerlund
+// https://github.com/akerlund/rtl_cordic
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// Description:
+// cordic_radian_core
+//
+// The CORDIC rotation engine: NR_OF_STAGES_P pipelined stages that rotate the
+// vector (ing_x_vector, ing_y_vector) by ing_theta_vector radians, leaving the
+// sine and cosine of the angle.
+//
+// Each stage rotates by a fixed atan(2^-k) taken from
+// cordic_atan_radian_table_pkg, choosing the direction from the sign of the
+// remaining angle. Because every rotation is by a power of two, a stage costs
+// a shift and an add and never a multiply -- that is the whole point of the
+// algorithm.
+//
+// Angles are folded into the first quadrant before rotating, using the pi/2
+// and pi constants localised from the table, because the stage rotations only
+// span roughly +/-1.74 radians. The core takes the MAGNITUDE of theta, so a
+// negative angle yields the same sine and cosine as its positive counterpart;
+// the sign belongs to the caller.
+//
+// The rotations also scale the vector by the CORDIC gain, so the input vector
+// is pre-scaled by its reciprocal and the output needs no correction.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+import cordic_atan_radian_table_pkg::*;
+
+`default_nettype none
+
+module cordic_radian_core #(
+    parameter int DATA_WIDTH_P   = -1,
+    parameter int NR_OF_STAGES_P = -1
+  )(
+    // Clock and reset
+    input  wire                              clk,
+    input  wire                              rst_n,
+
+    input  wire  signed [DATA_WIDTH_P-1 : 0] ing_theta_vector,
+    input  wire  signed [DATA_WIDTH_P-1 : 0] ing_x_vector,
+    input  wire  signed [DATA_WIDTH_P-1 : 0] ing_y_vector,
+
+    output logic signed [DATA_WIDTH_P-1 : 0] egr_sine_vector,
+    output logic signed [DATA_WIDTH_P-1 : 0] egr_cosine_vector
+ );
+
+  // Positive radian values
+  localparam logic signed [DATA_WIDTH_P-1 : 0] pos_pi_2_quarter = pi_2_4_pos_n54_q50[53 : 53-DATA_WIDTH_P+1];
+  localparam logic signed [DATA_WIDTH_P-1 : 0] pos_pi_4_quarter = pi_4_4_pos_n54_q50[53 : 53-DATA_WIDTH_P+1];
+  localparam logic signed [DATA_WIDTH_P-1 : 0] pos_pi_6_quarter = pi_6_4_pos_n54_q50[53 : 53-DATA_WIDTH_P+1];
+  localparam logic signed [DATA_WIDTH_P-1 : 0] pos_pi_8_quarter = pi_8_4_pos_n54_q50[53 : 53-DATA_WIDTH_P+1];
+
+  // CORDIC vectors
+  logic signed [DATA_WIDTH_P-1 : 0] theta_vector;
+  logic signed [DATA_WIDTH_P-1 : 0] x_vector [0 : NR_OF_STAGES_P-1]; // Cosine vector
+  logic signed [DATA_WIDTH_P-1 : 0] y_vector [0 : NR_OF_STAGES_P-1]; // Sine vector
+  logic signed [DATA_WIDTH_P-1 : 0] z_vector [0 : NR_OF_STAGES_P-1]; // Rotating vector
+
+  // Sign correction of the input theta vector
+  assign theta_vector = !ing_theta_vector[DATA_WIDTH_P-1] ? ing_theta_vector : -ing_theta_vector;
+
+  // Assigning the output registers
+  assign egr_sine_vector   = y_vector[NR_OF_STAGES_P-1];
+  assign egr_cosine_vector = x_vector[NR_OF_STAGES_P-1];
+
+
+  always_ff @(posedge clk or negedge rst_n) begin: stage_0
+    if (!rst_n) begin
+      x_vector[0] <= '0;
+      y_vector[0] <= '0;
+      z_vector[0] <= '0;
+    end
+    else begin
+
+      // Quadrant 1 - Do nothing
+      if (theta_vector <= pos_pi_2_quarter) begin
+        x_vector[0] <= ing_x_vector;
+        y_vector[0] <= ing_y_vector;
+        z_vector[0] <= theta_vector;
+      end
+      // Quadrant 2 - Move theta into Quadrant 1
+      else if (theta_vector <= pos_pi_4_quarter) begin
+        x_vector[0] <= -ing_y_vector;
+        y_vector[0] <=  ing_x_vector;
+        z_vector[0] <=  theta_vector - pos_pi_2_quarter;
+      end
+      // Quadrant 3 - Move theta into Quadrant 4
+      else if (theta_vector <= pos_pi_6_quarter) begin
+        x_vector[0] <=  ing_y_vector;
+        y_vector[0] <= -ing_x_vector;
+        z_vector[0] <=  theta_vector - pos_pi_6_quarter;
+      end
+      // Quadrant 4 - Do nothing
+      else begin
+        x_vector[0] <= ing_x_vector;
+        y_vector[0] <= ing_y_vector;
+        z_vector[0] <= theta_vector - pos_pi_8_quarter;
+      end
+    end
+  end
+
+  genvar i;
+  generate
+    for (i = 0; i < (NR_OF_STAGES_P-1); i++) begin: stage_n
+
+      logic                             z_sign;
+      logic signed [DATA_WIDTH_P-1 : 0] x_shr;
+      logic signed [DATA_WIDTH_P-1 : 0] y_shr;
+      logic        [DATA_WIDTH_P-1 : 0] atan_value;
+
+      // Arithmetic right shift (>>>) fills with value of sign bit if expression is signed
+      assign x_shr = x_vector[i] >>> i;
+      assign y_shr = y_vector[i] >>> i;
+
+      // Value of atan(2^-i)
+      assign atan_value = atan_radian_table_32stage_n64q60[i][63 : 63-DATA_WIDTH_P+1];
+
+      // The sign of the current rotation angle
+      assign z_sign = z_vector[i][31];
+
+      always_ff @(posedge clk or negedge rst_n) begin: cordic_stage
+        if (!rst_n) begin
+          x_vector[i+1] <= '0;
+          y_vector[i+1] <= '0;
+          z_vector[i+1] <= '0;
+        end
+        else begin
+          x_vector[i+1] <= z_sign ? x_vector[i] + y_shr      : x_vector[i] - y_shr;
+          y_vector[i+1] <= z_sign ? y_vector[i] - x_shr      : y_vector[i] + x_shr;
+          z_vector[i+1] <= z_sign ? z_vector[i] + atan_value : z_vector[i] - atan_value;
+        end
+      end
+    end
+  endgenerate
+
+endmodule
+
+`default_nettype wire

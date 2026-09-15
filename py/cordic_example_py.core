@@ -1,0 +1,38 @@
+CAPI=2:
+name: "akerlund::cordic_example_py:0"
+description: "CORDIC pyUVM/cocotb testbench"
+
+filesets:
+  tb:
+    files:
+      - tb/cordic_hdl_top.sv
+    file_type: systemVerilogSource
+    depend:
+      - "akerlund::cordic:1.0.0"
+
+targets:
+  default: &default
+    flow: sim
+    flow_options:
+      tool: verilator
+    filesets:
+      - tb
+    toplevel: cordic_hdl_top
+
+  lint:
+    <<: *default
+    flow: lint
+    flow_options:
+      tool: verilator
+      verilator_options:
+        - -Wno-fatal
+
+  sim:
+    <<: *default
+    flow_options:
+      tool: verilator
+      cocotb_module: cordic_tb_top
+      mode: cc
+      verilator_options:
+        - -Wno-fatal
+        - --public-flat-rw

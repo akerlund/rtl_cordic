@@ -1,0 +1,66 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2026 Fredrik Åkerlund
+// https://github.com/akerlund/rtl_cordic
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// Description:
+// cor_tb_pkg
+//
+// Compilation unit for the testbench side of the UVM environment: imports the
+// UVM and AXI4-Stream agent packages, then includes the environment, the
+// scoreboard and the virtual sequencer.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+`ifndef COR_TB_PKG
+`define COR_TB_PKG
+
+package cor_tb_pkg;
+
+  import uvm_pkg::*;
+  `include "uvm_macros.svh"
+
+  import clk_rst_types_pkg::*;
+  import clk_rst_pkg::*;
+  import vip_axi4s_types_pkg::*;
+  import vip_axi4s_agent_pkg::*;
+
+  localparam int TDATA_WIDTH_C = 32;
+  localparam int TID_WIDTH_C   = 2;
+
+  // Configuration of the AXI4-S VIP
+  localparam vip_axi4s_cfg_t VIP_AXI4S_CFG_C = '{
+    VIP_AXI4S_TDATA_WIDTH_P : TDATA_WIDTH_C,
+    VIP_AXI4S_TSTRB_WIDTH_P : TDATA_WIDTH_C/8,
+    VIP_AXI4S_TKEEP_WIDTH_P : 0,
+    VIP_AXI4S_TID_WIDTH_P   : TID_WIDTH_C,
+    VIP_AXI4S_TDEST_WIDTH_P : 0,
+    VIP_AXI4S_TUSER_WIDTH_P : 0
+  };
+
+  `include "vip_axi4s_seq_lib.sv"
+  `include "cor_scoreboard.sv"
+  `include "cor_virtual_sequencer.sv"
+  `include "cor_env.sv"
+
+endpackage
+
+`endif

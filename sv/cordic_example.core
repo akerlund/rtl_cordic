@@ -1,0 +1,67 @@
+CAPI=2:
+name: "akerlund::cordic_example:0"
+description: "CORDIC UVM testbench"
+
+filesets:
+  tb:
+    files:
+      # Compilation units
+      - tb/cordic_test_angles_pkg.sv
+      - tb/cor_tb_pkg.sv
+      - tc/cor_tc_pkg.sv
+      - tb/cor_tb_top.sv
+      # Include files (included by tb/tc packages)
+      - tb/cor_env.sv: {is_include_file: true}
+      - tb/cor_scoreboard.sv: {is_include_file: true}
+      - tb/cor_virtual_sequencer.sv: {is_include_file: true}
+      - tc/cor_base_test.sv: {is_include_file: true}
+      - tc/tc_negative_radian_spin.sv: {is_include_file: true}
+      - tc/tc_positive_radian_spin.sv: {is_include_file: true}
+    file_type: systemVerilogSource
+    depend:
+      - "akerlund::cordic:1.0.0"
+      - "akerlund::vip_axi4s_agent:1.0.1"
+      - "akerlund::vip_clk_rst_agent:0"
+      - "akerlund::vip_report_server:0"
+
+parameters:
+  AXI_DATA_WIDTH_P:
+    datatype: int
+    default: 16
+    paramtype: vlogparam
+  AXI_ID_WIDTH_P:
+    datatype: int
+    default: 4
+    paramtype: vlogparam
+  NR_OF_STAGES_P:
+    datatype: int
+    default: 16
+    paramtype: vlogparam
+
+targets:
+  default: &default
+    flow: sim
+    flow_options:
+      tool: vcs
+      # 3-stage mode analyses with vlogan first, which does not see -ntb_opts
+      # here and so cannot resolve uvm_macros.svh or uvm_pkg. One vcs
+      # invocation does analysis and elaboration together, which is also how
+      # the sibling VIP repos build their UVM testbenches.
+      2_stage_flow: true
+      vcs_options:
+        - -ntb_opts
+        - uvm-1.2
+        # Queue for a licence instead of failing when the pool is busy.
+        - -licqueue
+      run_options:
+        - +UVM_TESTNAME=tc_positive_radian_spin
+    filesets:
+      - tb
+    parameters:
+      - AXI_DATA_WIDTH_P
+      - AXI_ID_WIDTH_P
+      - NR_OF_STAGES_P
+    toplevel: cor_tb_top
+
+  uvm:
+    <<: *default
