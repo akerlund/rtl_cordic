@@ -1,11 +1,12 @@
 # CORDIC - System Verilog
 
-![Verilator](https://img.shields.io/badge/Verilator-5.050-brightgreen)
-![cocotb](https://img.shields.io/badge/cocotb-2.0.1-brightgreen)
-![pyUVM](https://img.shields.io/badge/pyUVM-4.0.1-brightgreen)
-![FuseSoC](https://img.shields.io/badge/FuseSoC-2.4.6-brightgreen)
-![VCS](https://img.shields.io/badge/VCS-2025.06-brightgreen)
-![Vivado](https://img.shields.io/badge/Vivado-2025.2-brightgreen)
+![Verilator](https://img.shields.io/badge/Verilator-5.050-green)
+![cocotb](https://img.shields.io/badge/cocotb-2.0.1-green)
+![pyUVM](https://img.shields.io/badge/pyUVM-4.0.1-green)
+![Vivado](https://img.shields.io/badge/Vivado-2025.2-green)
+![VCS](https://img.shields.io/badge/VCS-2025.06-green)
+
+![FuseSoC](https://img.shields.io/badge/FuseSoC-2.4.6-blue)
 
 This is a System Verilog implementation of the CORDIC algorithm. The design use fixed point representation of the input and output vectors. The input should be between ±2π with four integer bits and the rest as fractional bits and the output will be between ±1.
 
@@ -74,53 +75,42 @@ This implementation of the CORDIC algorithm can yield a simulation like this
 
 ## Synthesis
 
-Out of context synthesis for a "7z020clg484-1" FPGA yields the following
+Out-of-context synthesis for the Zynq-7020 (`xc7z020clg484-1`), reproducible
+from this repository:
+
+```sh
+./scripts/run_synth_vivado.sh
+```
+
+Out of context because `cordic_axi4s_if` is an IP block, not a device design:
+it skips I/O buffer insertion and pin mapping, so the numbers describe the core
+logic rather than an artificial pinout. It also means a bitstream is neither
+wanted nor possible, which is why the script stops after synthesis rather than
+using the flow's default target.
+
+At the core's default parameters — `AXI_DATA_WIDTH_P=16`, `AXI_ID_WIDTH_P=4`,
+`NR_OF_STAGES_P=16` — Vivado 2025.2 reports:
 
 ```text
-...
-parameter int AXI_DATA_WIDTH_P = 32,
-parameter int AXI_ID_WIDTH_P   = 3,
-parameter int NR_OF_STAGES_P   = 16
-...
-
-+----------------------------+------+-------+-----------+-------+
-|          Site Type         | Used | Fixed | Available | Util% |
-+----------------------------+------+-------+-----------+-------+
-| Slice LUTs*                | 1632 |     0 |     53200 |  3.07 |
-|   LUT as Logic             | 1628 |     0 |     53200 |  3.06 |
-|   LUT as Memory            |    4 |     0 |     17400 |  0.02 |
-|     LUT as Distributed RAM |    0 |     0 |           |       |
-|     LUT as Shift Register  |    4 |     0 |           |       |
-| Slice Registers            | 1437 |     0 |    106400 |  1.35 |
-|   Register as Flip Flop    | 1437 |     0 |    106400 |  1.35 |
-|   Register as Latch        |    0 |     0 |    106400 |  0.00 |
-| F7 Muxes                   |    0 |     0 |     26600 |  0.00 |
-| F8 Muxes                   |    0 |     0 |     13300 |  0.00 |
-+----------------------------+------+-------+-----------+-------+
++----------------------------+------+-------+------------+-----------+-------+
+|          Site Type         | Used | Fixed | Prohibited | Available | Util% |
++----------------------------+------+-------+------------+-----------+-------+
+| Slice LUTs*                |  539 |     0 |          0 |     53200 |  1.01 |
+|   LUT as Logic             |  534 |     0 |          0 |     53200 |  1.00 |
+|   LUT as Memory            |    5 |     0 |          0 |     17400 |  0.03 |
+|     LUT as Shift Register  |    5 |     0 |            |           |       |
+| Slice Registers            |  509 |     0 |          0 |    106400 |  0.48 |
+|   Register as Flip Flop    |  509 |     0 |          0 |    106400 |  0.48 |
+|   Register as Latch        |    0 |     0 |          0 |    106400 |  0.00 |
++----------------------------+------+-------+------------+-----------+-------+
 ```
 
-```
-...
-parameter int AXI_DATA_WIDTH_P = 16,
-parameter int AXI_ID_WIDTH_P   = 3,
-parameter int NR_OF_STAGES_P   = 16
-...
+No DSP slices: every stage is a shift and an add, which is the point of CORDIC.
+No latches, and no bonded IOBs — the latter expected, since out-of-context
+synthesis maps no pins.
 
-+----------------------------+------+-------+-----------+-------+
-|          Site Type         | Used | Fixed | Available | Util% |
-+----------------------------+------+-------+-----------+-------+
-| Slice LUTs*                |  537 |     0 |     53200 |  1.01 |
-|   LUT as Logic             |  533 |     0 |     53200 |  1.00 |
-|   LUT as Memory            |    4 |     0 |     17400 |  0.02 |
-|     LUT as Distributed RAM |    0 |     0 |           |       |
-|     LUT as Shift Register  |    4 |     0 |           |       |
-| Slice Registers            |  510 |     0 |    106400 |  0.48 |
-|   Register as Flip Flop    |  510 |     0 |    106400 |  0.48 |
-|   Register as Latch        |    0 |     0 |    106400 |  0.00 |
-| F7 Muxes                   |    0 |     0 |     26600 |  0.00 |
-| F8 Muxes                   |    0 |     0 |     13300 |  0.00 |
-+----------------------------+------+-------+-----------+-------+
-```
+Cost scales with `NR_OF_STAGES_P`, since the stages are a pipeline: more stages
+buy more accuracy at a proportional cost in LUTs and registers.
 
 ## CORDIC Theory
 

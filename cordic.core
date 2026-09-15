@@ -12,6 +12,11 @@ filesets:
       - rtl/cordic_axi4s_if.sv
     file_type: systemVerilogSource
 
+  synth_ooc:
+    files:
+      - constraints/vivado_ooc.tcl
+    file_type: tclSource
+
 parameters:
   AXI_DATA_WIDTH_P:
     datatype: int
@@ -30,6 +35,20 @@ targets:
   default:
     filesets:
       - rtl
+
+  synth_vivado:
+    flow: vivado
+    flow_options:
+      # Zynq-7020, the part the utilisation figures in the README describe.
+      part: xc7z020clg484-1
+    filesets:
+      - rtl
+      - synth_ooc
+    parameters:
+      - AXI_DATA_WIDTH_P
+      - AXI_ID_WIDTH_P
+      - NR_OF_STAGES_P
+    toplevel: cordic_axi4s_if
 
   rtl:
     flow: lint
